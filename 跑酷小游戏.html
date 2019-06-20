@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<style type="text/css">
+			* {
+				padding: 0;
+				margin: 0;
+			}
+			
+			canvas {
+				background-image: url("timg (1).jpg");
+				background-size: 100% 100%;
+				display: block;
+			}
+			
+			img {
+				display: none;
+			}
+		</style>
+	</head>
+
+	<body>
+		<canvas id="myCanvas" width="" height=""></canvas>
+		<audio class="bgm" src="bgm.mp3" loop="loop"></audio>
+		<audio class="jump" src="jump.mp3"></audio>
+		<audio class="good" src="good.mp3"></audio>
+		<audio class="eta" src="eta.mp3"></audio>
+		<audio class="gameover" src="gameover.mp3"></audio>
+		<img src="pet_03.BIG.png" />
+		<script type="text/javascript">
+			var eta = document.querySelector(".eta")
+			var bgm = document.querySelector(".bgm")
+			var jump = document.querySelector(".jump")
+			var good = document.querySelector(".good")
+			var gameover = document.querySelector(".gameover")
+			var canvas = document.getElementById("myCanvas")
+			canvas.width = document.documentElement.clientWidth;
+			canvas.height = document.documentElement.clientHeight
+			var ctx = canvas.getContext("2d")
+			var img = document.querySelector("img")
+			var background = new Image();
+			background.src = "background.png"
+			var bgX = 0,
+				bgY = 0;
+			var hang = 7,
+				lie = 1;
+			var i = 0,
+				j = 0;
+			var personX = canvas.width / 4,
+				personY = canvas.height * 2 / 3;
+			var speed = 50,
+				a = 6;
+			var state = "down";
+			var starArray = [];
+			var star = {
+				x: 0,
+				y: 0,
+				w: 70,
+				h: 70
+			}
+			var fen = 0;
+			var stoneArray = [];
+			var stone = {
+				x: 0,
+				y: 0,
+				width: 80,
+				height: 100
+			}
+			var stoneArray1 = [];
+			var stone1 = {
+				x: 0,
+				y: 0,
+				width: 80,
+				height: 100
+			}
+			ctx.beginPath();
+			ctx.fillStyle = "slateblue";
+			ctx.font = "50px sans-serif";
+			ctx.fillText("开始游戏", canvas.width / 2 - 85, canvas.height - 20)
+			window.onload = function() {
+				document.onclick = function(ev) {
+					if((canvas.width / 2 - 85 <= ev.clientX && ev.clientX <= canvas.width / 2 + 120) && (canvas.height - 70 <= ev.clientY && ev.clientY <= canvas.height - 20)) {
+						first();
+						bgm.play()
+					}
+				}
+			}
+
+			function first() {
+				canvas.removeAttribute("backgroundImage")
+				var timer = setInterval(function() {
+					judge();
+					draw();
+				}, 90)
+
+				function judge() {
+					i++;
+					if(i > hang - 1) {
+						i = 0
+					}
+					//地图移动
+					bgX -= 12;
+					if(bgX <= -canvas.width) {
+						bgX = 0;
+					}
+					//星星移动
+					star.x -= 10;
+					if(star.x<=50) {
+						starArray.splice(0, 1);
+					}
+					//石头移动
+					stone.x -= 20;
+					
+					if(stone.x<=30) {
+						stoneArray.splice(0, 1);
+					}
+					stone1.x -=20;
+					if(stone1.x<=30) {
+						stoneArray1.splice(0, 1);
+					}
+					// 判断星星与角色碰撞
+					var ab = touch();
+					if(ab) {
+						eta.play();
+						starArray.splice(0, 1);
+						//加分
+						fen += 10;
+
+					}
+					//人物跳动
+					if(state == "up") {
+						personY -= speed;
+						speed -= a;
+						if(personY >= canvas.height * 2 / 3) {
+							personY = canvas.height * 2 / 3;
+							speed = 50;
+							state = "down";
+						}
+					}
+				}
+
+				function draw() {
+					ctx.clearRect(0, 0, canvas.width, canvas.height)
+					ctx.drawImage(background, bgX, bgY, 2 * canvas.width, canvas.height)
+					ctx.drawImage(img, img.width / lie * j, img.height / hang * i, img.width / lie, img.height / hang, personX, personY, img.width / lie, img.height / hang)
+					if(starArray.length == 0) {
+						star.x = Math.random() * canvas.width / 2 + canvas.width * 2 / 3,
+							star.y = Math.random() * canvas.height / 3 + canvas.height / 4,
+							starArray.push(star);
+					}
+					drawStar(star.x, star.y, star.w, star.h);
+
+					ctx.beginPath();
+					if(stoneArray.length == 0) {
+						stone.x = Math.random() * canvas.width / 2 + canvas.width * 3 / 4;
+						stone.y = Math.random() *canvas.height*2/7+canvas.height*3/7;
+						stoneArray.push(stone);
+					}
+					drawstone(stone.x, stone.y, stone.width, stone.height)
+
+					ctx.beginPath();
+					if(stoneArray1.length == 0) {
+						stone1.x = Math.random() * canvas.width / 2 + canvas.width * 3 / 4;
+						stone1.y = Math.random() * canvas.height / 4;
+						stoneArray1.push(stone);
+					}
+					drawstone1(stone1.x, stone1.y, stone1.width, stone1.height)
+
+					var ab1 = touch1();
+					var ab2 = touch2();
+					if(ab1 || ab2) {
+						bgm.remove();
+						gameover.play();
+						clearInterval(timer)
+
+						ctx.beginPath();
+						var gameover1 = new Image();
+						gameover1.src = "gameover.jpg";
+						gameover1.onload = function() {
+							ctx.drawImage(gameover1, 0, 0, canvas.width, canvas.height)
+							ctx.font = "60px sans-serif";
+							ctx.fillStyle = "red";
+							ctx.fillText("得分：" + [fen], 400, 100)
+						}
+					}
+
+					if(fen == 100) {
+						bgm.remove()
+						good.play();
+						clearInterval(timer)
+						ctx.beginPath();
+						ctx.fillStyle = "#BD2C00";
+						var good1 = new Image();
+						good1.src = "good.jpg";
+						good1.onload = function() {
+							ctx.drawImage(good1, 0, 0, canvas.width, canvas.height)
+							ctx.font = "60px sans-serif"
+							ctx.fillText("得分：" + [fen], 400, 100)
+						}
+					}
+					ctx.font = "30px sans-serif"
+					ctx.fillText("得分：" + [fen], 50, 50)
+				}
+
+				document.onkeydown = function(ev) {
+
+					if(state == "down" && ev.keyCode == 32) {
+						state = "up";
+						jump.play();
+					}
+					if(ev.keyCode == 68) {
+						personX += 20
+						if(personX >= canvas.width - img.width) {
+							personX = canvas.width - img.width
+						}
+					}
+					if(ev.keyCode == 65) {
+						personX -= 20
+						if(personX <= 10) {
+							personX = 10
+						}
+					}
+				}
+
+				function touch() {
+					var a1 = Math.pow((star.x + star.w / 2) - (personX + img.width / lie / 2), 2);
+					var b1 = Math.pow((star.y + star.h / 2) - (personY + img.height / hang / 2), 2);
+					var c1 = Math.sqrt(a1 + b1);
+					if(c1 < 60) {
+						return true;
+					} else {
+						return false;
+					}
+				}
+
+				function touch1() {
+					var a2 = Math.pow((stone.x + stone.width / 2) - (personX + img.width / lie / 2), 2);
+					var b2 = Math.pow((stone.y + stone.height / 2) - (personY + img.height / hang / 2), 2);
+					var c2 = Math.sqrt(a2 + b2);
+
+					if(c2 < 60) {
+						return true;
+					}
+				}
+
+				function touch2() {
+					var a2 = Math.pow((stone1.x + stone1.width / 2) - (personX + img.width / lie / 2), 2);
+					var b2 = Math.pow((stone1.y + stone1.height / 2) - (personY + img.height / hang / 2), 2);
+					var c2 = Math.sqrt(a2 + b2);
+
+					if(c2 < 80) {
+						return true;
+					}
+				}
+
+				//绘制星星
+				for(var i = 0; i < 3; i++) {
+					function drawStar(X, Y, w, h) {
+						ctx.beginPath();
+						var star = new Image();
+						star.src = "jinbi.png";
+						star.onload = function() {
+							ctx.drawImage(star, X, Y, w, h)
+						}
+					}
+
+				}
+
+				function drawstone(X, Y, w, h) {
+					ctx.beginPath();
+					var stone = new Image();
+					stone.src = "youling5.png";
+					stone.onload = function() {
+						ctx.drawImage(stone, X, Y, w, h)
+					}
+				}
+
+				function drawstone1(X, Y, w, h) {
+					ctx.beginPath();
+					var stone1 = new Image();
+					stone1.src = "youling6.png";
+					stone1.onload = function() {
+						ctx.drawImage(stone1, X, Y, w, h)
+					}
+				}
+			}
+		</script>
+
+	</body>
+
+</html>
